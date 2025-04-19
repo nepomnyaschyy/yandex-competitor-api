@@ -1,0 +1,41 @@
+openapi: 3.0.1
+info:
+  title: Yandex Competitor API
+  version: 1.0.0
+  description: |
+    Этот API ищет топ-10 конкурентов в Яндекс по ключевому слову и региону.
+    Возвращает список сайтов, найденных в результатах поиска.
+
+servers:
+  - url: https://yandex-competitor-api.onrender.com
+
+paths:
+  /api/yandex-competitors:
+    post:
+      summary: Найти конкурентов в Яндексе
+      operationId: findCompetitors
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                region:
+                  type: string
+                  example: Москва
+                query:
+                  type: string
+                  example: доставка суши
+      responses:
+        '200':
+          description: Успешный ответ
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  results:
+                    type: array
+                    items:
+                      type: string

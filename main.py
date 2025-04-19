@@ -12,6 +12,11 @@ class SearchRequest(BaseModel):
 @app.post("/api/yandex-competitors")
 def get_competitors(data: SearchRequest):
     try:
+        # Получаем данные из тела запроса
+        region = data.region
+        keyword = data.keyword
+
+        # Запуск внешнего скрипта
         result = subprocess.run(
             ["python", "yandex_parser.py", region, keyword],
             capture_output=True,

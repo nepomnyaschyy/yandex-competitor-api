@@ -14,7 +14,7 @@ proxies = [
     {
         "server": "http://proxy.froxy.com:9000",
         "username": "yQqnOlDHz02LAm20",
-        "password": ""
+        "password": "mobile;;;;"
     }
 ]
 

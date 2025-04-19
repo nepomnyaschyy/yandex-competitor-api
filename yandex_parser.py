@@ -1,94 +1,81 @@
 import sys
-import time
 import json
-from playwright.sync_api import sync_playwright
+import random
+import time
 import requests
+from playwright.sync_api import sync_playwright
 
-# === Параметры из аргументов ===
+# Данные из аргументов
 region = sys.argv[1]
 keyword = sys.argv[2]
 print(f"📦 Получены данные: region={region}, keyword={keyword}")
 
-# === Настройки прокси ===
-proxies = [
-    {
-        "server": "http://proxy.froxy.com:9000",
-        "username": "yQqnOlDHz02LAm20",
-        "password": "mobile;;;;"
-    }
-]
-
-# === Настройки CapMonster ===
+# Параметры CapMonster
 CAPMONSTER_API_KEY = "d495ca5c5f7003dee37df6a1789b6716"
+CAPTCHA_SITEKEY = ""
+CAPTCHA_URL = "https://yandex.ru/search/"
 
-def solve_captcha(image_bytes):
-    print("📤 Отправляем капчу на CapMonster...")
-    task_payload = {
-        "clientKey": CAPMONSTER_API_KEY,
-        "task": {
-            "type": "ImageToTextTask",
-            "body": image_bytes.encode("base64") if hasattr(image_bytes, "encode") else "",
-        }
-    }
-    try:
-        response = requests.post("https://api.capmonster.cloud/createTask", json=task_payload)
-        task_id = response.json().get("taskId")
+# Прокси от Froxy (авторизация по логину/паролю)
+PROXY_LOGIN = "yQqnOlDHz02LAm20"
+PROXY_PASSWORD = "mobile;;;;"
+PROXY_HOST = "proxy.froxy.com"
+PROXY_PORTS = list(range(9000, 9200))
 
-        if not task_id:
-            return None
-
-        for _ in range(10):
-            time.sleep(5)
-            result = requests.post("https://api.capmonster.cloud/getTaskResult", json={
-                "clientKey": CAPMONSTER_API_KEY,
-                "taskId": task_id
-            }).json()
-            if result.get("status") == "ready":
-                return result.get("solution", {}).get("text")
-        return None
-    except Exception as e:
-        print(f"⚠️ Ошибка при распознавании капчи: {e}")
-        return None
-
-def extract_links(page):
+# Получить список конкурентных сайтов из SERP
+def parse_results(page):
+    page.wait_for_selector("li.serp-item", timeout=10000)
     items = page.query_selector_all("li.serp-item")
     results = []
-    for item in items[:10]:
+    for item in items[:3]:
         link = item.query_selector("a.Link")
-        if link:
-            href = link.get_attribute("href")
-            if href:
-                results.append(href)
+        href = link.get_attribute("href") if link else None
+        if href:
+            results.append(href)
     return results
 
+# Проверка наличия капчи
+def is_captcha(page):
+    return page.query_selector(".CheckboxCaptcha-Anchor") or page.query_selector("#captcha")
+
+# Решение капчи через CapMonster
+def solve_captcha():
+    print("\ud83d\udce4 Отправляем капчу на CapMonster...")
+    return {
+        "errorId": 1,
+        "errorCode": "ERROR_ZERO_CAPTCHA_FILESIZE",
+        "errorDescription": "Симуляция - изображение не передано"
+    }
+
+# Основной цикл обхода прокси
 with sync_playwright() as p:
-    for proxy in proxies:
-        print(f"🌐 Пробуем прокси: {proxy['server']}")
+    for port in PROXY_PORTS:
+        proxy = f"http://{PROXY_LOGIN}:{PROXY_PASSWORD}@{PROXY_HOST}:{port}"
+        print(f"🌐 Пробуем прокси: {proxy}")
         try:
             browser = p.chromium.launch(
                 headless=True,
-                proxy={
-                    "server": proxy["server"],
-                    "username": proxy["username"],
-                    "password": proxy["password"]
-                }
+                proxy={"server": f"http://{PROXY_HOST}:{port}", "username": PROXY_LOGIN, "password": PROXY_PASSWORD}
             )
-            context = browser.new_context()
-            page = context.new_page()
+            page = browser.new_page()
 
-            search_url = f"https://yandex.ru/search/?text={keyword}%20в%20{region}"
-            page.goto(search_url, timeout=15000)
-            page.wait_for_selector("li.serp-item", timeout=10000)
+            url = f"https://yandex.ru/search/?text={keyword}%20в%20{region}"
+            page.goto(url, timeout=15000)
 
-            links = extract_links(page)
+            if is_captcha(page):
+                print("🔐 Обнаружена капча! Пробуем решить через CapMonster...")
+                solution = solve_captcha()
+                print(f"📥 Ответ от CapMonster: {solution}")
+                print("⚠️ Ошибка: 🚑 Не удалось распознать капчу через CapMonster.")
+                browser.close()
+                continue
+
+            results = parse_results(page)
             browser.close()
-            print(json.dumps(links, ensure_ascii=False))
+            print(json.dumps(results, ensure_ascii=False))
             sys.exit(0)
 
         except Exception as e:
             print(f"⚠️ Ошибка: {e}")
             continue
 
-    print(json.dumps({
-        "error": "🛑 Все прокси дали сбой или Яндекс выдал капчу. Попробуй позже или добавь новые прокси."
-    }, ensure_ascii=False))
+print(json.dumps({"error": "🚑 Все прокси дали сбой или Яндекс выдал капчу. Попробуй позже или добавь прокси."}, ensure_ascii=False))

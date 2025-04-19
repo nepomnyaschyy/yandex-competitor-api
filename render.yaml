@@ -6,5 +6,5 @@ services:
     region: oregon
     buildCommand: pip install -r requirements.txt
     startCommand: >
-      bash -c "python -m playwright install --with-deps && echo '✅ Браузеры установлены' && uvicorn main:app --host 0.0.0.0 --port 10000"
+      bash -c "python -m playwright install chromium && echo '✅ Браузеры установлены' && uvicorn main:app --host 0.0.0.0 --port 10000"
     autoDeploy: true

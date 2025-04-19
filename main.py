@@ -13,7 +13,7 @@ class SearchRequest(BaseModel):
 def get_competitors(data: SearchRequest):
     try:
         result = subprocess.run(
-            ["venv311\\Scripts\\python.exe", "yandex_parser.py", data.keyword, data.region],
+            ["python", "yandex_parser.py", region, keyword],
             capture_output=True,
             text=True,
             timeout=60

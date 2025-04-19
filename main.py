@@ -15,6 +15,8 @@ def get_competitors(data: SearchRequest):
         # Получаем данные из тела запроса
         region = data.region
         keyword = data.keyword
+        print(f"📦 Получены данные: region={region}, keyword={keyword}")
+
 
         # Запуск внешнего скрипта
         result = subprocess.run(

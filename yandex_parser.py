@@ -1,28 +1,33 @@
-# yandex_parser.py
 import sys
 import json
 from playwright.sync_api import sync_playwright
 
-keyword = sys.argv[1]
-region = sys.argv[2]
+# Получаем параметры из командной строки
+region = sys.argv[1]
+keyword = sys.argv[2]
 
-query = f"{keyword} {region}"
-results = []
+print(f"📦 Получены данные: region={region}, keyword={keyword}")
 
-with sync_playwright() as p:
-    browser = p.chromium.launch(headless=True)
-    page = browser.new_page()
-    page.goto(f"https://yandex.ru/search/?text={query}", timeout=60000)
-    page.wait_for_timeout(2000)
+# Настройка прокси
+proxy_config = {
+    "server": "http://95.181.157.185:8000",
+    "username": "z8m9cu",
+    "password": "zMmuCv"
+}
 
-    if "Вы не робот?" in page.content():
-        print(json.dumps({"error": "Яндекс выдал капчу. Попробуй позже или используй прокси."}, ensure_ascii=False))
-        browser.close()
-        sys.exit(0)
+try:
+    with sync_playwright() as p:
+        browser = p.chromium.launch(
+            headless=True,
+            proxy=proxy_config
+        )
+        page = browser.new_page()
+        page.goto(f"https://yandex.ru/search/?text={keyword}+{region}", timeout=60000)
 
-    try:
+        # Ждём появления результатов
         page.wait_for_selector("li.serp-item", timeout=10000)
-    except:
-        print(json.dumps({"error": "⚠️ Элементы результатов не найдены. Возможно, капча или пустая выдача."}, ensure_ascii=False))
-        browser.close()
-        sys.exit(0)
+
+        items = page.query_selector_all("li.serp-item")
+        results = []
+
+        for item in items[:10]:  # Берём только первые 10

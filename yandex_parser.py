@@ -31,3 +31,16 @@ try:
         results = []
 
         for item in items[:10]:  # Берём только первые 10
+            link = item.query_selector("a.Link")
+            if link:
+                href = link.get_attribute("href")
+                title = link.inner_text()
+                results.append({"title": title, "url": href})
+
+        print(json.dumps(results, ensure_ascii=False))
+        browser.close()
+
+except Exception as e:
+    print(json.dumps({
+        "error": "🛑 Не удалось получить результаты: " + str(e)
+    }, ensure_ascii=False))

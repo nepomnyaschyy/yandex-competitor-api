@@ -37,7 +37,11 @@ def get_competitors(data: SearchRequest):
             parsed = json.loads(result.stdout)
             return {"results": parsed} if isinstance(parsed, list) else parsed
         except json.JSONDecodeError:
-            return {"error": "❌ Скрипт не вернул корректный JSON"}
+            return {
+    "error": "❌ Скрипт не вернул корректный JSON",
+    "stdout": result.stdout,
+    "stderr": result.stderr
+}
 
     except Exception as e:
         return {"error": f"💥 Ошибка при запуске внешнего парсера: {str(e)}"}

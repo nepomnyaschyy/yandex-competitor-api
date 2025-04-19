@@ -55,7 +55,7 @@ region = sys.argv[1]
 keyword = sys.argv[2]
 print(f"📦 Получены данные: region={region}, keyword={keyword}")
 
-for port in random.sample(working_ports, len(working_ports)):
+for port in random.sample(working_ports, 10):
     proxy = f"http://{froxy_login}:{froxy_password}@proxy.froxy.com:{port}"
     print(f"🌐 Пробуем прокси: {proxy}")
 

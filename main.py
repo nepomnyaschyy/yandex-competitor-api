@@ -29,7 +29,7 @@ def get_competitors(data: SearchRequest):
             ["python", "yandex_parser.py", region, keyword],
             capture_output=True,
             text=True,
-            timeout=90
+            timeout=180
         )
 
         print("🟢 STDOUT:")

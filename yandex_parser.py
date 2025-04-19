@@ -18,36 +18,49 @@ PROXIES = [
 ]
 
 def solve_captcha(filepath):
-    with open(filepath, "rb") as f:
-        encoded = f.read()
+    try:
+        with open(filepath, "rb") as f:
+            image_data = f.read()
 
-    task_payload = {
-        "clientKey": CAPMONSTER_API_KEY,
-        "task": {
-            "type": "ImageToTextTask",
-            "body": encoded.hex(),
-            "phrase": False,
-            "case": False
-        }
-    }
-
-    task_response = requests.post("https://api.capmonster.cloud/createTask", json=task_payload).json()
-    task_id = task_response.get("taskId")
-
-    if not task_id:
-        return None
-
-    for _ in range(20):
-        time.sleep(3)
-        result = requests.post("https://api.capmonster.cloud/getTaskResult", json={
+        task_payload = {
             "clientKey": CAPMONSTER_API_KEY,
-            "taskId": task_id
-        }).json()
+            "task": {
+                "type": "ImageToTextTask",
+                "body": image_data.hex(),
+                "phrase": False,
+                "case": False
+            }
+        }
 
-        if result.get("status") == "ready":
-            return result["solution"]["text"]
+        print("📤 Отправляем капчу на CapMonster...")
 
-    return None
+        response = requests.post("https://api.capmonster.cloud/createTask", json=task_payload)
+        task_response = response.json()
+
+        print("📥 Ответ от CapMonster:", task_response)
+
+        task_id = task_response.get("taskId")
+        if not task_id:
+            return None
+
+        for attempt in range(20):
+            time.sleep(3)
+            result = requests.post("https://api.capmonster.cloud/getTaskResult", json={
+                "clientKey": CAPMONSTER_API_KEY,
+                "taskId": task_id
+            }).json()
+
+            print(f"⏱ Попытка {attempt + 1}/20 — статус: {result.get('status')}")
+
+            if result.get("status") == "ready":
+                print("✅ Капча распознана:", result["solution"]["text"])
+                return result["solution"]["text"]
+
+        print("⏳ Время ожидания вышло. Капча не распознана.")
+        return None
+    except Exception as e:
+        print("❌ Ошибка в solve_captcha:", str(e))
+        return None
 
 results = []
 
